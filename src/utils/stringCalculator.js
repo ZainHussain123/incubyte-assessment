@@ -1,36 +1,43 @@
+
+
 export function add(numbers) {
   if (!numbers || numbers.trim() === "") return 0;
 
-  // convert escaped newlines like "\n" into real newlines
   numbers = numbers.replace(/\\n/g, "\n");
 
-  let delimiter = /,|\n/; // default: comma or newline
+  let delimiter = /,|\n/; // default delimiters
   let input = numbers;
 
-  // Custom delimiter: //;\n1;2
+  // ✅ Handle custom delimiter
   if (numbers.startsWith("//")) {
-    const parts = numbers.split("\n");
-    const delimiterPart = parts[0].slice(2);
-    delimiter = new RegExp(delimiterPart);
-    input = parts.slice(1).join("\n");
+    const match = numbers.match(/^\/\/(.+)\n([\s\S]*)$/);
+    if (match) {
+      let delimiterPart = match[1];
+      input = match[2]; // string after newline
+      delimiterPart = delimiterPart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      delimiter = new RegExp(`${delimiterPart}|,|\n`);
+    }
   }
 
-  // Split input string using commas or newlines
   const tokens = input.split(delimiter).filter((t) => t.trim() !== "");
 
-  // Convert to numbers
+  // ✅ if no numeric values at all — return 0
+  const hasNumber = tokens.some((t) => !isNaN(Number(t)) && t.trim() !== "");
+  if (!hasNumber) return 0;
+
   const nums = tokens.map((t) => Number(t));
 
-  // Handle invalid entries
+  // ✅ Throw error if it contains letters *alongside* numbers
   if (nums.some((n) => isNaN(n))) {
     throw new Error("Invalid input — contains non-numeric values");
   }
 
-  // Check for negatives
+  // ✅ Negative number handling
   const negatives = nums.filter((n) => n < 0);
   if (negatives.length > 0) {
     throw new Error(`negative numbers not allowed ${negatives.join(", ")}`);
   }
 
+  // ✅ Sum all numbers
   return nums.reduce((sum, n) => sum + n, 0);
 }
